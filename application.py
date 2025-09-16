@@ -8,13 +8,14 @@ from string import punctuation
 import tkinter as tk
 from tkinter.filedialog import askopenfile, asksaveasfile
 
+from structures.word_ll import WordStorage
+
 
 BASE_DIR = os.getcwd()
 
 
 class App(ctk.CTk):
     def __init__(self):
-        # Word file info
         # Design config
 
         super().__init__()
@@ -76,20 +77,29 @@ class App(ctk.CTk):
 
     def get_words(self, file):
         try:
+            storage = WordStorage()
             with open(file, 'r') as file:
                 translator = str.maketrans('', '', punctuation)
                 splitted_file = file.read().translate(translator).split()
-                unique_words = [
-                    x.lower() for x in splitted_file
-                    if not x.isdigit()
-                    ]
-                return self.create_to_learn_file(list(set(unique_words)))
+                words = [w.lower() for w in splitted_file if not w.isdigit()]
+
+                def translating():
+                    word_translations = asyncio.run(App.translate_words(words))
+                    for word, tr in zip(words, word_translations):
+                        if not storage.in_list(word):
+                            storage.append(
+                                word=word,
+                                translation=tr,
+                                count=21
+                                )
+                    self.after(0, lambda: self.create_to_learn_file(storage))
+                threading.Thread(target=translating, daemon=True).start()
         except FileExistsError:
             raise FileExistsError('File doesn\'t exists.\nTry Again!')
         except FileNotFoundError:
             raise FileNotFoundError('Wrong path for file.\nTry Again!')
 
-    def create_to_learn_file(self, words):
+    def create_to_learn_file(self, storage: WordStorage):
         file = asksaveasfile(
             parent=self,
             mode='w',
@@ -99,16 +109,11 @@ class App(ctk.CTk):
             defaultextension='.txt'
         )
         if file:
-            def writing():
-                data_for_file = ''
-                translations = asyncio.run(App.translate_words(words))
-                for word in range(len(words)):
-                    data_for_file += words[word] + ' - ' + translations[word] + '\n'
-
-                file.write(data_for_file.strip())
-                file.close()
-
-                self.report_window(len(words))
-            threading.Thread(target=writing, daemon=True).start()
+            to_file = ''
+            for word in storage:
+                to_file += word.val + ' - ' + word.translation + '\n'
+            file.write(to_file.strip())
+            file.close()
+            self.report_window(storage.size())
         else:
             self.report_window()

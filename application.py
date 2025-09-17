@@ -6,7 +6,7 @@ import asyncio
 import threading
 from string import punctuation
 import tkinter as tk
-from tkinter.filedialog import askopenfile, asksaveasfile
+from tkinter.filedialog import askopenfile, asksaveasfilename
 
 
 BASE_DIR = os.getcwd()
@@ -15,7 +15,6 @@ BASE_DIR = os.getcwd()
 class App(ctk.CTk):
     def __init__(self):
         # Design config
-
         super().__init__()
         self.geometry('720x480')
         self.title('Learn English Dude')
@@ -31,17 +30,18 @@ class App(ctk.CTk):
         )
         self.load_file_btn.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
-    @staticmethod
-    async def translate_one(word: str) -> str:
+    async def translate_words(self, unique_words, all_words):
         async with Translator() as translator:
-            result = await translator.translate(word, dest='ru', src='en')
-            return result.text
+            tasks = [translator.translate(word, dest='ru', src='en') for word in unique_words]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    @staticmethod
-    async def translate_words(words):
-        tasks = [App.translate_one(w) for w in words]
-        translations = await asyncio.gather(*tasks, return_exceptions=True)
-        return translations
+            storage = []
+            for word, res in zip(unique_words, results):
+                if isinstance(res, Exception):
+                    storage.append([word, f"[error: {type(res).__name__}]", str(all_words.count(word))])
+                else:
+                    storage.append([word, res.text, str(all_words.count(word))])
+            return storage
 
     def report_window(self, words=None):
         window = ctk.CTkToplevel(
@@ -71,36 +71,30 @@ class App(ctk.CTk):
             initialdir=BASE_DIR,
             filetypes=[('Text files', '.*txt')]
         )
-        return self.get_words(file.name)
+        threading.Thread(target=self.get_words, args=(file.name,), daemon=True).start()
 
     def get_words(self, file):
         try:
-            storage = []
-            with open(file, 'r') as file:
+            with open(file, 'r', encoding='utf-8') as f:
                 translator = str.maketrans('', '', punctuation)
-                splitted_file = file.read().translate(translator).split()
+                splitted_file = f.read().translate(translator).split()
                 words = [w.lower() for w in splitted_file if not w.isdigit()]
                 unique_words = set(words)
 
-                def translating():
-                    word_translations = asyncio.run(App.translate_words(unique_words))
-                    for word, tr in zip(unique_words, word_translations):
-                        storage.append([word, tr, str(words.count(word))])
-                    self.after(0, lambda: self.create_to_learn_file(storage))
-                threading.Thread(target=translating, daemon=True).start()
+            storage = asyncio.run(self.translate_words(unique_words, words))
+            self.after(0, lambda: self.create_to_learn_file(storage))
         except FileExistsError:
             raise FileExistsError('File doesn\'t exists.\nTry Again!')
         except FileNotFoundError:
             raise FileNotFoundError('Wrong path for file.\nTry Again!')
 
     def create_to_learn_file(self, storage: list):
-        file = asksaveasfile(
+        file = asksaveasfilename(
             parent=self,
-            mode='w',
             title='Save File',
             initialdir=BASE_DIR,
             filetypes=[('Text files', '.*txt'),],
-            defaultextension='.txt'
+            defaultextension='.txt',
         )
         if file:
             try:
@@ -111,8 +105,8 @@ class App(ctk.CTk):
                         f'{word[0]} - {word[1]}\n'
                             )
                     to_file += text
-                file.write(to_file.strip())
-                file.close()
+                with open(file, 'w', encoding='utf-8') as f:
+                    f.write(to_file)
                 self.report_window(len(storage))
             except TypeError:
                 self.report_window()

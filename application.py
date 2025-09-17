@@ -8,8 +8,6 @@ from string import punctuation
 import tkinter as tk
 from tkinter.filedialog import askopenfile, asksaveasfile
 
-from structures.word_ll import WordStorage
-
 
 BASE_DIR = os.getcwd()
 
@@ -77,21 +75,17 @@ class App(ctk.CTk):
 
     def get_words(self, file):
         try:
-            storage = WordStorage()
+            storage = []
             with open(file, 'r') as file:
                 translator = str.maketrans('', '', punctuation)
                 splitted_file = file.read().translate(translator).split()
                 words = [w.lower() for w in splitted_file if not w.isdigit()]
+                unique_words = set(words)
 
                 def translating():
-                    word_translations = asyncio.run(App.translate_words(words))
-                    for word, tr in zip(words, word_translations):
-                        if not storage.in_list(word):
-                            storage.append(
-                                word=word,
-                                translation=tr,
-                                count=21
-                                )
+                    word_translations = asyncio.run(App.translate_words(unique_words))
+                    for word, tr in zip(unique_words, word_translations):
+                        storage.append([word, tr, str(words.count(word))])
                     self.after(0, lambda: self.create_to_learn_file(storage))
                 threading.Thread(target=translating, daemon=True).start()
         except FileExistsError:
@@ -99,7 +93,7 @@ class App(ctk.CTk):
         except FileNotFoundError:
             raise FileNotFoundError('Wrong path for file.\nTry Again!')
 
-    def create_to_learn_file(self, storage: WordStorage):
+    def create_to_learn_file(self, storage: list):
         file = asksaveasfile(
             parent=self,
             mode='w',
@@ -109,11 +103,18 @@ class App(ctk.CTk):
             defaultextension='.txt'
         )
         if file:
-            to_file = ''
-            for word in storage:
-                to_file += word.val + ' - ' + word.translation + '\n'
-            file.write(to_file.strip())
-            file.close()
-            self.report_window(storage.size())
+            try:
+                to_file = ''
+                for word in storage:
+                    text = (
+                        f'Freq: {word[2]}; '
+                        f'{word[0]} - {word[1]}\n'
+                            )
+                    to_file += text
+                file.write(to_file.strip())
+                file.close()
+                self.report_window(len(storage))
+            except TypeError:
+                self.report_window()
         else:
             self.report_window()

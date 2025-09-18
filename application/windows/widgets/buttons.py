@@ -1,0 +1,15 @@
+from typing import Any
+from customtkinter import CTkButton
+
+
+class LoadFileButton(CTkButton):
+    def __init__(self, master: Any, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.configure(
+            text='Load File',
+            anchor='center',
+            hover=True,
+            width=150,
+            height=100,
+            font=('Roboto', 28,)
+        )

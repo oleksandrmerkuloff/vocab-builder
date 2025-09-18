@@ -22,7 +22,7 @@ async def translate_words(unique_words: set, all_words: list):
         return storage
 
 
-def get_words(master, file, func):
+def get_words(master, file, func, cards):
     try:
         with open(file, 'r', encoding='utf-8') as f:
             translator = str.maketrans('', '', punctuation)
@@ -30,7 +30,8 @@ def get_words(master, file, func):
             words = [w.lower() for w in splitted_file if not w.isdigit()]
             unique_words = set(words)
         storage = asyncio.run(translate_words(unique_words, words))
-        master.after(0, lambda: func(master, storage))
+        storage.sort(key=lambda x: x[2], reverse=True)
+        master.after(0, lambda: func(master, storage, cards))
     except FileExistsError:
         raise FileExistsError('File doesn\'t exists.\nTry Again!')
     except FileNotFoundError:

@@ -9,6 +9,7 @@ from typing import Any
 from application.windows.report import ReportWindow
 from application.windows.widgets.buttons import LoadFileButton
 from utils.wordsmith import get_words
+from utils.word_card import create_pdf
 
 
 BASE_DIR = os.getcwd()
@@ -19,6 +20,8 @@ class MainWindow(CTkFrame):
         super().__init__(master, *args, **kwargs)
         self.pack(fill='both', expand=True)
 
+        # Widgets
+
         self.welcome_label = ctk.CTkLabel(
             self,
             text="""Hello Illya!\n
@@ -28,10 +31,18 @@ class MainWindow(CTkFrame):
         )
         self.welcome_label.pack()
 
+        self.card_checkbox = ctk.CTkCheckBox(
+            self,
+            text='Generate cards?'
+        )
+        self.card_checkbox.pack()
+
         self.load_file_button = LoadFileButton(self, command=self.load_file)
         self.load_file_button.pack()
 
     def load_file(self):
+        cards = self.card_checkbox.get()
+        self.card_checkbox.deselect()
         filepath = askopenfilename(
             parent=self,
             title='Open File',
@@ -40,11 +51,11 @@ class MainWindow(CTkFrame):
         )
         threading.Thread(
             target=get_words,
-            args=(self, filepath, MainWindow.create_to_learn_file),
+            args=(self, filepath, MainWindow.create_to_learn_file, cards),
             daemon=True).start()
 
     @staticmethod
-    def create_to_learn_file(master: Any, storage: list):
+    def create_to_learn_file(master: Any, storage: list, cards: int):
         file = asksaveasfilename(
             parent=master,
             title='Save File',
@@ -63,10 +74,22 @@ class MainWindow(CTkFrame):
                     to_file += text
                 with open(file, 'w', encoding='utf-8') as f:
                     f.write(to_file)
-                print('done')
+                if cards:
+                    MainWindow.generate_cards(master, storage)
                 words_counter = str(len(storage))
                 ReportWindow(master=master, amount_of_words=words_counter)
             except TypeError:
                 ReportWindow(master=master)
         else:
             ReportWindow(master=master)
+
+    @staticmethod
+    def generate_cards(master, words: list) -> None:
+        file = asksaveasfilename(
+            parent=master,
+            title='Save File With Cards',
+            initialdir=BASE_DIR,
+            filetypes=[('Portable Document Format', '.*pdf'),],
+            defaultextension='.pdf',
+        )
+        return create_pdf(words, file)

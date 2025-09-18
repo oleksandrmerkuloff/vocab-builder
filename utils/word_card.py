@@ -9,26 +9,38 @@ def generate_html(words: list) -> str:
     * {
         padding: 0;
         margin: 0;
+        box-sizing: border-box;
     }
     body {
         display: flex;
         flex-wrap: wrap;
-        justify-content: space-between;
-        padding: 0 1vw;
+        justify-content: center;
+        gap: 15px;
+        padding: 20px;
     }
     .word-card {
-        padding: 1%;
+        width: 240px;   /* smaller width */
+        height: 120px;  /* smaller height */
         border: 2px solid black;
         border-radius: 6px;
         text-align: center;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        page-break-inside: avoid; /* prevent cutting */
     }
     .original {
-        font-size: 28px;
+        font-size: 20px;
         font-weight: bold;
     }
     .translate {
-        font-size: 24px;
+        font-size: 18px;
         font-weight: bold;
+    }
+    hr {
+        border: 1px dashed black; /* dashed fold line */
+        margin: 5px 0;
     }
     </style>
     </head>
@@ -39,12 +51,12 @@ def generate_html(words: list) -> str:
         html += f"""
         <div class="word-card">
             <div class="original">{word[0].title()}</div>
-            <br/>
+            <hr/>
             <div class="translate">{word[1].title()}</div>
         </div>
         """
 
-    html += '</body></html>'
+    html += "</body></html>"
     return html
 
 

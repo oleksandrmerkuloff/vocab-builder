@@ -9,7 +9,7 @@ class LoadFileButton(CTkButton):
             text='Load File',
             anchor='center',
             hover=True,
-            width=150,
-            height=100,
-            font=('Roboto', 28,)
+            width=650,
+            height=60,
+            font=('Roboto', 26,)
         )

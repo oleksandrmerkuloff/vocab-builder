@@ -11,7 +11,7 @@ class ReportWindow(ctk.CTkToplevel):
         **kwargs
     ):
         super().__init__(*args, **kwargs)
-        self.title = 'Report Window'
+        self.title('Report Window')
         self.geometry('600x400')
         self.resizable(False, False)
 

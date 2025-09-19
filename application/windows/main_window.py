@@ -27,18 +27,30 @@ class MainWindow(CTkFrame):
             text="""Hello Illya!\n
             I suppose this app helps you improve your English:)
             """,
-            font=('Roboto', 28)
+            font=('Roboto', 26),
+            justify='center'
         )
-        self.welcome_label.pack()
+        self.welcome_label.pack(
+            pady=(20, 10),
+            anchor='n'
+        )
 
         self.card_checkbox = ctk.CTkCheckBox(
             self,
-            text='Generate cards?'
+            text='Generate cards?',
+            font=('Roboto', 28)
         )
-        self.card_checkbox.pack()
+        self.card_checkbox.pack(
+            pady=(50, 10),
+            padx=(45, 0),
+            anchor='w'
+        )
 
         self.load_file_button = LoadFileButton(self, command=self.load_file)
-        self.load_file_button.pack()
+        self.load_file_button.pack(
+            pady=(20, 40),
+            side='bottom'
+        )
 
     def load_file(self):
         cards = self.card_checkbox.get()

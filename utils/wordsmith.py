@@ -30,7 +30,7 @@ def get_words(master, file, func, cards):
             words = [w.lower() for w in splitted_file if not w.isdigit()]
             unique_words = set(words)
         storage = asyncio.run(translate_words(unique_words, words))
-        storage.sort(key=lambda x: x[2], reverse=True)
+        storage.sort(key=lambda x: int(x[2]), reverse=True)
         master.after(0, lambda: func(master, storage, cards))
     except FileExistsError:
         raise FileExistsError('File doesn\'t exists.\nTry Again!')

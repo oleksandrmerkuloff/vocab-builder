@@ -7,6 +7,7 @@ class ReportWindow(ctk.CTkToplevel):
     def __init__(
         self,
         amount_of_words: str | None = None,
+        c_text: str | None = None,
         *args,
         **kwargs
     ):
@@ -22,9 +23,15 @@ class ReportWindow(ctk.CTkToplevel):
                 text=f'Find unique words: {amount_of_words}.\nFile was saved.',
                 font=('Times New Roman', 28,)
             )
+        elif c_text:
+            report_label = ctk.CTkLabel(
+                self,
+                text=c_text,
+                font=('Times New Roman', 28,)
+            )
         else:
             report_label = ctk.CTkLabel(
-                amount_of_words,
+                self,
                 text='Operation failed. Try again.',
                 font=('Times New Roman', 28,)
             )

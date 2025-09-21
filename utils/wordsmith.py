@@ -1,38 +1,46 @@
 from googletrans import Translator
 
-import asyncio
 from string import punctuation
 
 
-async def translate_words(unique_words: set, all_words: list):
-    async with Translator() as translator:
-        tasks = [translator.translate(word, dest='ru', src='en') for word in unique_words]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        storage = []
-        for word, res in zip(unique_words, results):
-            if isinstance(res, Exception):
-                storage.append(
-                    [
-                        word, f"[error: {type(res).__name__}]",
-                        str(all_words.count(word))
-                        ]
-                    )
-            else:
-                storage.append([word, res.text, str(all_words.count(word))])
-        return storage
+translator = Translator()
 
 
-def get_words(master, file, func, cards):
+def translate_words(unique_words: set, all_words: list):
+    translator = Translator()
+    storage = []
+    for word in unique_words:
+        try:
+            res = translator.translate(word, dest='ru', src='en')
+            storage.append([word, res.text, str(all_words.count(word))])
+        except Exception as e:
+            storage.append([word, f"[error: {type(e).__name__}]", str(all_words.count(word))])
+    return storage
+
+
+async def get_words(master, file, func):
     try:
         with open(file, 'r', encoding='utf-8') as f:
             translator = str.maketrans('', '', punctuation)
             splitted_file = f.read().translate(translator).split()
             words = [w.lower() for w in splitted_file if not w.isdigit()]
             unique_words = set(words)
-        storage = asyncio.run(translate_words(unique_words, words))
+
+        total = len(unique_words)
+        storage = []
+        translator = Translator()
+
+        for index, word in enumerate(unique_words, 1):
+            try:
+                result = await translator.translate(word, dest='ru', src='en')
+                storage.append([word, result.text, str(words.count(word))])
+            except Exception as e:
+                storage.append([word, f"[error: {type(e).__name__}]", str(words.count(word))])
+
+            progess = index / total
+            master.after(0, lambda p=progess: master.progress_bar.set(p))
+
         storage.sort(key=lambda x: int(x[2]), reverse=True)
-        master.after(0, lambda: func(master, storage, cards))
-    except FileExistsError:
-        raise FileExistsError('File doesn\'t exists.\nTry Again!')
+        master.after(0, lambda: func(master, storage))
     except FileNotFoundError:
         raise FileNotFoundError('Wrong path for file.\nTry Again!')

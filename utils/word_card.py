@@ -1,5 +1,9 @@
 from weasyprint import HTML
 
+import chardet
+
+from application.windows.report import ReportWindow
+
 
 def generate_html(words: list) -> str:
     html = """
@@ -60,9 +64,35 @@ def generate_html(words: list) -> str:
     return html
 
 
-def create_pdf(words: list, file_path: str) -> None:
-    html_content = generate_html(words)
-    HTML(string=html_content).write_pdf(file_path)
+def read_file_safely(path):
+    with open(path, "rb") as f:
+        raw = f.read()
+    enc = chardet.detect(raw)["encoding"] or "utf-8"
+    return raw.decode(enc, errors="ignore")
+
+
+def create_pdf(master, words_path, pdf_path):
+    content = read_file_safely(words_path)
+    lines = [x.strip() for x in content.splitlines() if x.strip()]
+
+    words = []
+    total = len(lines)
+    for i, line in enumerate(lines, 1):
+        try:
+            _, rest = line.split(";", 1)
+            original, translate = rest.split("-", 1)
+            words.append([original.strip(), translate.strip()])
+        except ValueError:
+            continue
+        master.after(0, lambda p=i/total: master.progress_bar.set(p))
+
+    html = generate_html(words)
+    HTML(string=html).write_pdf(pdf_path)
+
+    master.after(0, lambda: ReportWindow(master=master, c_text="PDF Generated"))
+    master.after(0, lambda: master.progress_bar.set(1))
+
+    return pdf_path
 
 
 if __name__ == '__main__':
@@ -74,4 +104,4 @@ if __name__ == '__main__':
     ]
     file_path = 'test.pdf'
 
-    create_pdf(test_words, file_path)
+    # create_pdf(test_words, file_path)

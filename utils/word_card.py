@@ -1,6 +1,7 @@
 from weasyprint import HTML
 
 import chardet
+import threading
 
 from application.windows.report import ReportWindow
 
@@ -72,27 +73,34 @@ def read_file_safely(path):
 
 
 def create_pdf(master, words_path, pdf_path):
-    content = read_file_safely(words_path)
-    lines = [x.strip() for x in content.splitlines() if x.strip()]
+    def worker():
+        content = read_file_safely(words_path)
+        lines = [x.strip() for x in content.splitlines() if x.strip()]
 
-    words = []
-    total = len(lines)
-    for i, line in enumerate(lines, 1):
-        try:
-            _, rest = line.split(";", 1)
-            original, translate = rest.split("-", 1)
-            words.append([original.strip(), translate.strip()])
-        except ValueError:
-            continue
-        master.after(0, lambda p=i/total: master.progress_bar.set(p))
+        words = []
+        total = len(lines)
+        for i, line in enumerate(lines, 1):
+            try:
+                _, rest = line.split(";", 1)
+                original, translate = rest.split("-", 1)
+                words.append([original.strip(), translate.strip()])
+            except ValueError:
+                continue
+            master.after(0, lambda p=i/total: master.progress_bar.set(p))
+            master.after(0, lambda: master.progress_label.configure(text=f'{i}/{total}'))
 
-    html = generate_html(words)
-    HTML(string=html).write_pdf(pdf_path)
+        print('start gen')
+        html = generate_html(words)
 
-    master.after(0, lambda: ReportWindow(master=master, c_text="PDF Generated"))
-    master.after(0, lambda: master.progress_bar.set(1))
+        # run heavy blocking part
+        HTML(string=html).write_pdf(pdf_path)
 
-    return pdf_path
+        print('finish')
+        master.after(0, lambda: ReportWindow(master=master, c_text="PDF Generated"))
+        master.after(0, lambda: master.progress_bar.set(1))
+
+    # run in background
+    threading.Thread(target=worker, daemon=True).start()
 
 
 if __name__ == '__main__':

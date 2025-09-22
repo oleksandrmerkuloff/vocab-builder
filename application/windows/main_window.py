@@ -22,11 +22,6 @@ class MainWindow(CTkFrame):
         self.pack(fill='both', expand=True)
 
         # Widgets
-        self.progress_bar = ctk.CTkProgressBar(self)
-        self.progress_bar.pack(pady=10)
-        self.progress_bar.set(0)
-        self.progress_bar.stop()
-
         self.welcome_label = ctk.CTkLabel(
             self,
             text="""Hello Illya!\n
@@ -39,6 +34,18 @@ class MainWindow(CTkFrame):
             pady=(20, 10),
             anchor='n'
         )
+
+        self.progress_bar = ctk.CTkProgressBar(self)
+        self.progress_bar.pack(pady=(10, 0))
+        self.progress_bar.set(0)
+        self.progress_bar.stop()
+
+        self.progress_label = ctk.CTkLabel(
+            self,
+            text='0/0',
+            font=('Roboto', 14)
+            )
+        self.progress_label.pack()
 
         self.card_checkbox = ctk.CTkCheckBox(
             self,
@@ -57,7 +64,7 @@ class MainWindow(CTkFrame):
             font=('Roboto', 28)
         )
         self.translation_checkbox.pack(
-            pady=(50, 10),
+            pady=(25, 10),
             padx=(45, 0),
             anchor='w'
         )
@@ -83,7 +90,7 @@ class MainWindow(CTkFrame):
         self.card_checkbox.deselect()
         self.translation_checkbox.deselect()
 
-    def cards_gen_process(self):
+    def cards_gen_process(self) -> None:
         self.uncheck()
         datafile_path = askopenfilename(
             parent=self,
@@ -99,6 +106,9 @@ class MainWindow(CTkFrame):
             defaultextension='.pdf',
         )
 
+        if not datafile_path or not card_file_path:
+            return
+
         def task():
             self.progress_bar.set(0)
             create_pdf(self, datafile_path, card_file_path)
@@ -106,7 +116,7 @@ class MainWindow(CTkFrame):
 
         threading.Thread(target=task, daemon=True).start()
 
-    def translation_process(self):
+    def translation_process(self) -> None:
         self.uncheck()
         filepath = askopenfilename(
             parent=self,
@@ -115,14 +125,24 @@ class MainWindow(CTkFrame):
             filetypes=[('Text files', '.*txt')]
         )
 
-        def task():
-            self.progress_bar.set(0)
-            asyncio.run(get_words(self, filepath, MainWindow.create_to_learn_file))
-            self.progress_bar.set(1)
+        if not filepath:
+            return
 
+        def task():
+            self.after(0, lambda: self.progress_bar.set(0))
+
+            async def runner():
+                await get_words(self, filepath, MainWindow.create_to_learn_file)
+
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(runner())
+            loop.close()
+
+            self.after(0, lambda: self.progress_bar.set(1))
         threading.Thread(target=task, daemon=True).start()
 
-    def translation_and_cards(self):
+    def translation_and_cards(self) -> None:
         self.uncheck()
         filepath = askopenfilename(
             parent=self,
@@ -145,24 +165,31 @@ class MainWindow(CTkFrame):
             defaultextension='.pdf',
         )
 
+        if not save_pdf or not save_txt or not filepath:
+            return
+
         def task():
             self.after(0, lambda: self.progress_bar.set(0))
 
             async def runner():
-                async def after_translate(master, storage):
+                def after_translate(master, storage):
                     with open(save_txt, 'w', encoding='utf-8') as f:
                         for word in storage:
                             f.write(f'Freq: {word[2]}; {word[0]} - {word[1]}\n')
                     create_pdf(master, save_txt, save_pdf)
-                    self.progress_bar.set(1)
+                    self.after(0, lambda: self.progress_bar.set(1))
                     self.after(0, lambda: ReportWindow(master=self, c_text="Translate + PDF Ready"))
 
                 await get_words(self, filepath, after_translate)
             asyncio.run(runner())
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(runner())
+            loop.close()
         threading.Thread(target=task, daemon=True).start()
 
     @staticmethod
-    def create_to_learn_file(master: Any, storage: list):
+    def create_to_learn_file(master: Any, storage: list) -> None:
         file = asksaveasfilename(
             parent=master,
             title='Save File',
@@ -170,20 +197,19 @@ class MainWindow(CTkFrame):
             filetypes=[('Text files', '.*txt'),],
             defaultextension='.txt',
         )
-        if file:
-            try:
-                to_file = ''
-                for word in storage:
-                    text = (
-                        f'Freq: {word[2]}; '
-                        f'{word[0]} - {word[1]}\n'
-                            )
-                    to_file += text
-                with open(file, 'w', encoding='utf-8') as f:
-                    f.write(to_file)
-                words_counter = str(len(storage))
-                ReportWindow(master=master, amount_of_words=words_counter)
-            except TypeError:
-                ReportWindow(master=master)
-        else:
+        if not file:
+            return
+        try:
+            to_file = ''
+            for word in storage:
+                text = (
+                    f'Freq: {word[2]}; '
+                    f'{word[0]} - {word[1]}\n'
+                        )
+                to_file += text
+            with open(file, 'w', encoding='utf-8') as f:
+                f.write(to_file)
+            words_counter = str(len(storage))
+            ReportWindow(master=master, amount_of_words=words_counter)
+        except TypeError:
             ReportWindow(master=master)

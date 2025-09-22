@@ -178,14 +178,11 @@ class MainWindow(CTkFrame):
                             f.write(f'Freq: {word[2]}; {word[0]} - {word[1]}\n')
                     create_pdf(master, save_txt, save_pdf)
                     self.after(0, lambda: self.progress_bar.set(1))
-                    self.after(0, lambda: ReportWindow(master=self, c_text="Translate + PDF Ready"))
 
                 await get_words(self, filepath, after_translate)
+
             asyncio.run(runner())
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(runner())
-            loop.close()
+
         threading.Thread(target=task, daemon=True).start()
 
     @staticmethod

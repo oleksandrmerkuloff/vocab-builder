@@ -89,27 +89,11 @@ def create_pdf(master, words_path, pdf_path):
             master.after(0, lambda p=i/total: master.progress_bar.set(p))
             master.after(0, lambda: master.progress_label.configure(text=f'{i}/{total}'))
 
-        print('start gen')
         html = generate_html(words)
 
-        # run heavy blocking part
         HTML(string=html).write_pdf(pdf_path)
 
-        print('finish')
         master.after(0, lambda: ReportWindow(master=master, c_text="PDF Generated"))
         master.after(0, lambda: master.progress_bar.set(1))
 
-    # run in background
     threading.Thread(target=worker, daemon=True).start()
-
-
-if __name__ == '__main__':
-    test_words = [
-        ['hello', 'привіт'],
-        ['world', 'світ'],
-        ['from', 'від'],
-        ['Crystal1s', 'Crystal1s']
-    ]
-    file_path = 'test.pdf'
-
-    # create_pdf(test_words, file_path)

@@ -3,21 +3,6 @@ from googletrans import Translator
 from string import punctuation
 
 
-translator = Translator()
-
-
-# def translate_words(unique_words: set, all_words: list):
-#     translator = Translator()
-#     storage = []
-#     for word in unique_words:
-#         try:
-#             res = translator.translate(word, dest='ru', src='en')
-#             storage.append([word, res.text, str(all_words.count(word))])
-#         except Exception as e:
-#             storage.append([word, f"[error: {type(e).__name__}]", str(all_words.count(word))])
-#     return storage
-
-
 async def get_words(master, file, func):
     try:
         with open(file, 'r', encoding='utf-8') as f:

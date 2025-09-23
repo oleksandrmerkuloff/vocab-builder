@@ -7,6 +7,7 @@ from application.windows.report import ReportWindow
 
 
 def generate_html(words: list) -> str:
+    """Generate HTML file"""
     html = """
     <html>
     <head>
@@ -66,6 +67,7 @@ def generate_html(words: list) -> str:
 
 
 def read_file_safely(path):
+    """Check type of file encoding"""
     with open(path, "rb") as f:
         raw = f.read()
     enc = chardet.detect(raw)["encoding"] or "utf-8"
@@ -73,6 +75,7 @@ def read_file_safely(path):
 
 
 def create_pdf(master, words_path, pdf_path):
+    """Gets data create html and generate pdf"""
     def worker():
         content = read_file_safely(words_path)
         lines = [x.strip() for x in content.splitlines() if x.strip()]

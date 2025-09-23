@@ -17,6 +17,7 @@ BASE_DIR = os.getcwd()
 
 
 class MainWindow(CTkFrame):
+    """Main Window for all app includes widgets and starting functions"""
     def __init__(self, master: Any, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.pack(fill='both', expand=True)
@@ -79,6 +80,7 @@ class MainWindow(CTkFrame):
         )
 
     def start_operation(self):
+        """Check value of checkboxes and start one of the processes"""
         if self.card_checkbox.get() and self.translation_checkbox.get():
             self.translation_and_cards()
         elif self.card_checkbox.get():
@@ -87,10 +89,12 @@ class MainWindow(CTkFrame):
             self.translation_process()
 
     def uncheck(self):
+        """Deselect checkboxes"""
         self.card_checkbox.deselect()
         self.translation_checkbox.deselect()
 
     def cards_gen_process(self) -> None:
+        """Gets path for txt and pdf files and start process of card gen"""
         self.uncheck()
         datafile_path = askopenfilename(
             parent=self,
@@ -117,6 +121,7 @@ class MainWindow(CTkFrame):
         threading.Thread(target=task, daemon=True).start()
 
     def translation_process(self) -> None:
+        """Gets sourcefile path for translation process"""
         self.uncheck()
         filepath = askopenfilename(
             parent=self,
@@ -143,6 +148,7 @@ class MainWindow(CTkFrame):
         threading.Thread(target=task, daemon=True).start()
 
     def translation_and_cards(self) -> None:
+        """Start point func for translation and cards generation"""
         self.uncheck()
         filepath = askopenfilename(
             parent=self,
@@ -187,6 +193,7 @@ class MainWindow(CTkFrame):
 
     @staticmethod
     def create_to_learn_file(master: Any, storage: list) -> None:
+        """Create result txt file with words translation"""
         file = asksaveasfilename(
             parent=master,
             title='Save File',

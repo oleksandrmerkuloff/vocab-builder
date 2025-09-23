@@ -4,6 +4,7 @@ import tkinter as tk
 
 
 class ReportWindow(ctk.CTkToplevel):
+    """Base report window"""
     def __init__(
         self,
         amount_of_words: str | None = None,

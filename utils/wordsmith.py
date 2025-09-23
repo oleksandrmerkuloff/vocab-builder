@@ -4,6 +4,7 @@ from string import punctuation
 
 
 async def get_words(master, file, func):
+    """Gets original words translate them and create data for result txt file"""
     try:
         with open(file, 'r', encoding='utf-8') as f:
             translator = str.maketrans('', '', punctuation)

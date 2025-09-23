@@ -7,7 +7,6 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title('Learn English Dude')
-        self.iconbitmap('icon.ico')
         self.geometry('720x480')
         self.resizable(False, False)
 
